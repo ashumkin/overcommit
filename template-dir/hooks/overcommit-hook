@@ -59,7 +59,25 @@ rescue LoadError
 end
 
 begin
-  logger = Overcommit::Logger.new(STDOUT)
+  class WinLogger < IO
+    def reencode_args(*args)
+      args.each do |arg|
+        arg.encode!('cp1251', 'UTF-8', {:invalid => :replace, :undef => :replace}) if arg.respond_to? :encode!
+      end
+    end
+
+    def puts(*args)
+      reencode_args(*args)
+      STDOUT.puts(*args)
+    end
+
+    def print(*args)
+      STDOUT.print(*args)
+    end
+  end
+
+  logger = Overcommit::Logger.new(WinLogger.new(STDOUT.fileno, "w"))
+  logger.log "Windows logger"
   Overcommit::Utils.log = logger
 
   # Ensure master hook is up-to-date
